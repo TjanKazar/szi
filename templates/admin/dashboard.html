@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover, callno, avail %}
+{% block title %}Nadzorna plošča{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="mono muted">Administracija</span>
+      <h1>Nadzorna <em>plošča</em></h1>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('admin_book_new') }}">+ Dodaj knjigo</a>
+  </div>
+</section>
+<div class="wrap" style="padding-bottom:80px">
+  <div class="kpis reveal">
+    <div class="kpi"><b>{{ stats.titles }}</b><span class="mono">Naslovov</span></div>
+    <div class="kpi"><b>{{ stats.copies }}</b><span class="mono">Izvodov skupaj</span></div>
+    <div class="kpi"><b>{{ stats.active }}</b><span class="mono">Aktivnih rezervacij</span></div>
+    <div class="kpi"><b>{{ stats.students }}</b><span class="mono">Študentov</span></div>
+  </div>
+
+  <div class="section-title" style="justify-content:space-between;flex-wrap:wrap">
+    <div style="display:flex;gap:14px;align-items:baseline"><h2>Knjige</h2><span class="count-badge">{{ books|length }}</span></div>
+    <input class="admin-search" type="search" placeholder="Filtriraj knjige…" oninput="filterRows(this.value)" aria-label="Filtriraj knjige">
+  </div>
+  <div class="table-wrap">
+    <table id="books">
+      <thead><tr><th>Knjiga</th><th>Avtor</th><th>Kategorija</th><th>Izvodi</th><th>Rez.</th><th style="text-align:right">Dejanja</th></tr></thead>
+      <tbody>
+      {% for b in books %}
+        <tr data-q="{{ (b.title ~ ' ' ~ b.author ~ ' ' ~ b.category)|lower }}">
+          <td><div class="title-cell">{{ cover(b, 'sm') }}<div><span class="mono muted">{{ callno(b) }}</span><br><a href="{{ url_for('book_detail', book_id=b.id) }}">{{ b.title }}</a></div></div></td>
+          <td>{{ b.author }}</td>
+          <td><span class="chip" style="display:inline-block">{{ b.category }}</span></td>
+          <td>{{ avail(b) }}</td>
+          <td class="num">{{ b.active_res }}</td>
+          <td><div class="actions">
+            <a class="btn btn-sm" href="{{ url_for('admin_book_edit', book_id=b.id) }}">Uredi</a>
+            <form method="post" action="{{ url_for('admin_book_delete', book_id=b.id) }}" data-confirm="Izbrišem »{{ b.title }}«{% if b.active_res %} in {{ b.active_res }} aktivnih rezervacij{% endif %}?">
+              <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-danger" type="submit">Izbriši</button>
+            </form>
+          </div></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:40px">Katalog je prazen. <a href="{{ url_for('admin_book_new') }}">Dodaj prvo knjigo</a>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-title" id="rezervacije"><h2>Rezervacije</h2><span class="count-badge">{{ reservations|length }}</span></div>
+  <div class="tabs">
+    {% for key, label in [('active','Aktivne'),('cancelled','Preklicane'),('all','Vse')] %}
+      <a class="{{ 'on' if status == key }}" href="{{ url_for('admin_dashboard', status=key) }}#rezervacije">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Študent</th><th>Knjiga</th><th>Ustvarjeno</th><th>Status</th><th style="text-align:right">Dejanja</th></tr></thead>
+      <tbody>
+      {% for r in reservations %}
+        <tr>
+          <td class="num">{{ '%05d'|format(r.id) }}</td>
+          <td><b>{{ r.user_name }}</b><br><span class="muted" style="font-size:.85rem">{{ r.user_email }}</span></td>
+          <td><a href="{{ url_for('book_detail', book_id=r.book_id) }}" style="font-family:var(--serif);font-size:1.2rem;text-decoration:none">{{ r.title }}</a><br><span class="muted" style="font-size:.85rem">{{ r.author }}</span></td>
+          <td class="num">{{ r.created_at[:16] }}</td>
+          <td><span class="status {{ r.status }}">{{ 'Aktivna' if r.status == 'active' else 'Preklicana' }}</span></td>
+          <td><div class="actions">
+            {% if r.status == 'active' %}
+            <form method="post" action="{{ url_for('admin_cancel_reservation', res_id=r.id) }}" data-confirm="Zaključim rezervacijo in vrnem izvod?">
+              <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="status" value="{{ status }}">
+              <button class="btn btn-sm" type="submit">Zaključi</button>
+            </form>
+            {% else %}<span class="mono muted">{{ (r.cancelled_at or '')[:16] }}</span>{% endif %}
+          </div></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:40px" class="muted">Ni rezervacij v tem pogledu.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  function filterRows(v) {
+    v = v.toLowerCase().trim();
+    document.querySelectorAll('#books tbody tr[data-q]').forEach(tr =>
+      tr.style.display = tr.dataset.q.includes(v) ? '' : 'none');
+  }
+</script>
+{% endblock %}

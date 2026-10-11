@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover, callno, book_card %}
+{% block title %}{{ book.title }}{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="crumbs mono"><a href="{{ url_for('catalog') }}">← Katalog</a><span class="muted">/</span><a href="{{ url_for('catalog', category=book.category) }}">{{ book.category }}</a><span class="muted">/ {{ callno(book) }}</span></div>
+  <div class="detail">
+    <div class="reveal">{{ cover(book, 'lg') }}</div>
+    <div class="reveal" style="animation-delay:100ms">
+      <span class="mono muted">{{ callno(book) }} · {{ book.category }}{% if book.year %} · {{ book.year }}{% endif %}</span>
+      <h1>{{ book.title }}</h1>
+      <div class="by">avtor: {{ book.author }}</div>
+      <div class="tags">
+        <a class="chip" href="{{ url_for('catalog', category=book.category) }}">{{ book.category }}</a>
+        <a class="chip" href="{{ url_for('catalog', q=book.author, field='author') }}">Več od avtorja</a>
+      </div>
+      <p class="desc">{{ book.description or 'Opis te knjige še ni na voljo.' }}</p>
+
+      <div class="copies-card">
+        <div class="copies-num {{ 'zero' if book.available_copies == 0 }}">
+          <b>{{ book.available_copies }}</b><span class="mono">od {{ book.total_copies }}</span>
+        </div>
+        <div class="copies-body">
+          <span class="mono">{% if book.available_copies == 0 %}Vsi izvodi so rezervirani{% elif book.available_copies == 1 %}Še zadnji izvod!{% else %}Preostali izvodi{% endif %}</span>
+          <div class="slots">{% for i in range(book.total_copies) %}<i class="{{ 'f' if i < book.available_copies }}"></i>{% endfor %}</div>
+          {% if not me %}
+            <a class="btn btn-primary" href="{{ url_for('login', next=request.path) }}">Prijavi se za rezervacijo →</a>
+          {% elif me.role == 'student' %}
+            {% if my_res %}
+              <form method="post" action="{{ url_for('cancel_reservation', res_id=my_res.id) }}" data-confirm="Prekličem rezervacijo?">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}">
+                <span class="mono" style="display:block;margin-bottom:10px;color:var(--blue)">✓ Rezervirano {{ my_res.created_at[:10] }}</span>
+                <button class="btn btn-danger btn-block" type="submit">Prekliči rezervacijo</button>
+              </form>
+            {% else %}
+              <form method="post" action="{{ url_for('reserve', book_id=book.id) }}">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="btn btn-primary btn-block" type="submit" {{ 'disabled' if book.available_copies == 0 }}>
+                  {{ 'Ni prostih izvodov' if book.available_copies == 0 else 'Rezerviraj izvod →' }}
+                </button>
+              </form>
+            {% endif %}
+          {% else %}
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <a class="btn btn-ink" href="{{ url_for('admin_book_edit', book_id=book.id) }}">Uredi</a>
+              <form method="post" action="{{ url_for('admin_book_delete', book_id=book.id) }}" data-confirm="Izbrišem »{{ book.title }}« in vse njene rezervacije?">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="btn btn-danger" type="submit">Izbriši</button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% if related %}
+<section class="related">
+  <div class="wrap">
+    <h2>Tudi v kategoriji <em>{{ book.category }}</em></h2>
+    <div class="grid">{% for b in related %}{{ book_card(b, False, loop.index0) }}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Prijava{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="auth-art">
+    <span class="mono">Izkaznica · Člani</span>
+    <h1>Dobrodošel<br><em>nazaj.</em></h1>
+    <p>Prijavi se in nadaljuj tam, kjer si ostal — tvoje rezervacije te čakajo.</p>
+    <div class="spines" aria-hidden="true">
+      {% for h, c in [(220,'#E8452C'),(300,'#F2C230'),(180,'transparent'),(260,'#9FD4C4'),(340,'transparent'),(240,'#C9B8F0'),(200,'#E8452C')] %}<i style="height:{{ h }}px;background:{{ c }}"></i>{% endfor %}
+    </div>
+  </div>
+  <div class="auth-form">
+    <div class="box reveal">
+      <h2>Prijava</h2>
+      <p class="sub">Nimaš računa? <a href="{{ url_for('register') }}">Registriraj se</a>.</p>
+      <form method="post">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <div class="field"><label for="email">E-pošta</label><input id="email" type="email" name="email" value="{{ email }}" required autofocus autocomplete="email"></div>
+        <div class="field"><label for="password">Geslo</label><input id="password" type="password" name="password" required autocomplete="current-password"></div>
+        <button class="btn btn-primary btn-block" type="submit">Vstopi →</button>
+      </form>
+      <div class="demo">
+        <span class="mono">Demo računi</span><br>
+        Študent: <code>ana@student.si</code> / <code>student123</code><br>
+        Admin: <code>admin@knjiznica.si</code> / <code>admin123</code>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

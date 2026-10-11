@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "_macros.html" import book_card %}
+{% block title %}Katalog{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="hero-kicker mono">Katalog · {{ stats.titles }} naslovov</div>
+      <h1>Poišči svojo<br>naslednjo <em>knjigo.</em></h1>
+    </div>
+    <div class="hero-side reveal" style="animation-delay:120ms">
+      <p>Brskaj po polici, rezerviraj z enim klikom in knjigo prevzemi na izposojnem pultu.</p>
+      <div class="stats">
+        <div class="stat"><b>{{ stats.titles }}</b><span>Naslovov</span></div>
+        <div class="stat"><b>{{ stats.copies }}</b><span>Izvodov</span></div>
+        <div class="stat"><b>{{ stats.available }}</b><span>Na voljo</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <form class="search" method="get" action="{{ url_for('catalog') }}" role="search">
+    <select name="field" aria-label="Išči po">
+      <option value="all" {{ 'selected' if field == 'all' }}>Vse</option>
+      <option value="title" {{ 'selected' if field == 'title' }}>Naslov</option>
+      <option value="author" {{ 'selected' if field == 'author' }}>Avtor</option>
+      <option value="category" {{ 'selected' if field == 'category' }}>Kategorija</option>
+    </select>
+    <input type="search" name="q" value="{{ q }}" placeholder="Naslov, avtor ali kategorija…" aria-label="Iskalni niz" autocomplete="off">
+    <select name="category" aria-label="Kategorija">
+      <option value="">Vse kategorije</option>
+      {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}
+    </select>
+    {% if only_available %}<input type="hidden" name="available" value="1">{% endif %}
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <button class="btn btn-primary" type="submit">Išči →</button>
+  </form>
+
+  {% set base = {'q': q, 'field': field, 'sort': sort} %}
+  <div class="filterbar">
+    <a class="chip {{ 'on' if not category }}" href="{{ url_for('catalog', available='1' if only_available else None, **base) }}">Vse</a>
+    {% for c in categories %}
+      <a class="chip {{ 'on' if c == category }}" href="{{ url_for('catalog', category=c, available='1' if only_available else None, **base) }}">{{ c }}</a>
+    {% endfor %}
+    <span class="spacer"></span>
+    <form method="get" id="opts" style="display:flex;gap:14px;align-items:center;margin:0;flex-wrap:wrap">
+      <input type="hidden" name="q" value="{{ q }}"><input type="hidden" name="field" value="{{ field }}">
+      <input type="hidden" name="category" value="{{ category }}">
+      <label class="toggle"><input type="checkbox" name="available" value="1" {{ 'checked' if only_available }} onchange="this.form.submit()"> Samo razpoložljive</label>
+      <select name="sort" onchange="this.form.submit()" aria-label="Razvrsti">
+        <option value="title" {{ 'selected' if sort == 'title' }}>A–Ž naslov</option>
+        <option value="author" {{ 'selected' if sort == 'author' }}>A–Ž avtor</option>
+        <option value="new" {{ 'selected' if sort == 'new' }}>Najnovejše</option>
+        <option value="available" {{ 'selected' if sort == 'available' }}>Največ na voljo</option>
+      </select>
+    </form>
+  </div>
+
+  <div class="results-head">
+    <h2>{% if q or category or only_available %}Rezultati{% else %}Na polici{% endif %}</h2>
+    <span class="mono muted">{{ books|length }} {{ 'zadetek' if books|length == 1 else 'zadetkov' }}</span>
+  </div>
+
+  {% if books %}
+  <div class="grid">
+    {% for b in books %}{{ book_card(b, b.id in my_ids, loop.index0) }}{% endfor %}
+  </div>
+  {% else %}
+  <div class="empty" style="margin-bottom:80px">
+    <h3>Prazna polica.</h3>
+    <p>Za »{{ q or category }}« ni zadetkov. Poskusi z drugim iskalnim nizom.</p>
+    <a class="btn" href="{{ url_for('catalog') }}">Počisti filtre</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Katalog{% endblock %} · Knjižnica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23141210'/><text x='16' y='25' font-family='serif' font-size='24' fill='%23E8452C' text-anchor='middle'>K</text></svg>">
+</head>
+<body>
+{% set ep = request.endpoint or '' %}
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('catalog') }}"><span class="brand-mark">K</span><span class="brand-name">Knjižnica</span></a>
+    <button class="btn btn-sm btn-ghost menu-toggle" type="button" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Meni">Meni ☰</button>
+    <nav class="nav">
+      <a href="{{ url_for('catalog') }}" class="{{ 'active' if ep in ('catalog','book_detail') }}">Katalog</a>
+      {% if me %}
+        {% if me.role == 'student' %}
+          <a href="{{ url_for('my_reservations') }}" class="{{ 'active' if ep == 'my_reservations' }}">Moje rezervacije</a>
+        {% else %}
+          <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if ep.startswith('admin') }}">Nadzorna plošča</a>
+          <a href="{{ url_for('admin_book_new') }}" class="{{ 'active' if ep == 'admin_book_new' }}">+ Nova knjiga</a>
+        {% endif %}
+        <span class="who"><i class="role-dot {{ me.role }}"></i>{{ me.name.split()[0] }} · {{ 'admin' if me.role == 'admin' else 'študent' }}</span>
+        <form method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="linklike" type="submit">Odjava →</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="{{ 'active' if ep == 'login' }}">Prijava</a>
+        <a href="{{ url_for('register') }}" class="{{ 'active' if ep == 'register' }}">Registracija</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    {% for _ in range(2) %}
+    <span>Rezerviraj na spletu, prevzemi na pultu</span>
+    <span>Odprto pon–pet 8:00–20:00</span>
+    <span>Tišina, prosim</span>
+    <span>Nove knjige vsak teden</span>
+    <span>Preklic rezervacije kadarkoli</span>
+    <span>Knjiga je najboljši prijatelj</span>
+    {% endfor %}
+  </div>
+</div>
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  <div class="wrap">
+    <span class="big">Knjižnica — beri več.</span>
+    <span class="mono">© {{ 2026 }} · Študentska knjižnica</span>
+  </div>
+</footer>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+<div class="toasts">
+  {% for cat, msg in messages %}
+  <div class="toast {{ cat }}" role="status">
+    <span class="ic">{{ {'ok':'✓','error':'!','info':'i'}.get(cat, 'i') }}</span>
+    <p>{{ msg }}</p>
+    <button type="button" aria-label="Zapri" onclick="this.parentElement.classList.add('out');setTimeout(()=>this.parentElement.remove(),250)">×</button>
+  </div>
+  {% endfor %}
+</div>
+{% endwith %}
+<script>
+  document.querySelectorAll('.toast').forEach((t, i) => setTimeout(() => {
+    t.classList.add('out'); setTimeout(() => t.remove(), 250);
+  }, 4500 + i * 600));
+  document.querySelectorAll('form[data-confirm]').forEach(f => f.addEventListener('submit', e => {
+    if (!confirm(f.dataset.confirm)) e.preventDefault();
+  }));
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

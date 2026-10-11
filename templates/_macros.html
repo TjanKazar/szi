@@ -1,0 +1,36 @@
+{% macro cover(book, size='') -%}
+{% set s = cover_style(book) %}
+<div class="cover {{ size }}" style="--bg: {{ s.bg }}; --fg: {{ s.fg }};">
+  <div class="pat p{{ s.pattern }}"></div>
+  {% if book.cover_url %}<img src="{{ book.cover_url }}" alt="Naslovnica: {{ book.title }}" loading="lazy" onerror="this.remove()">{% endif %}
+  <div class="c-top"><span>{{ book.category }}</span><span>{{ book.year or '' }}</span></div>
+  <div class="c-bottom">
+    <div class="c-title">{{ book.title }}</div>
+    <div class="c-author">{{ book.author }}</div>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro avail(book) -%}
+{% set n = book.available_copies %}
+<span class="avail {{ 'none' if n == 0 }}">
+  <span class="bar">{% for i in range([book.total_copies, 6]|min) %}<i class="{{ 'f' if i < n }}"></i>{% endfor %}</span>
+  {% if n == 0 %}Ni na voljo{% else %}{{ n }}/{{ book.total_copies }} na voljo{% endif %}
+</span>
+{%- endmacro %}
+
+{% macro callno(book) -%}No. {{ '%04d'|format(book.id) }}{%- endmacro %}
+
+{% macro book_card(book, mine=False, i=0) -%}
+<a class="book-card reveal" href="{{ url_for('book_detail', book_id=book.id) }}" style="animation-delay: {{ (i % 12) * 40 }}ms">
+  {% if mine %}<span class="stamp mine">Rezervirano</span>
+  {% elif book.available_copies == 0 %}<span class="stamp">Izposojeno</span>{% endif %}
+  {{ cover(book) }}
+  <div class="book-meta">
+    <span class="callno mono"><span>{{ callno(book) }}</span><span>{{ book.category }}</span></span>
+    <h3>{{ book.title }}</h3>
+    <span class="author">{{ book.author }}</span>
+    {{ avail(book) }}
+  </div>
+</a>
+{%- endmacro %}

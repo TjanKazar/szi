@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Registracija{% endblock %}
+{% block content %}
+{% set role = form.get('role', 'student') %}
+<section class="auth">
+  <div class="auth-art" style="background:var(--accent);color:var(--ink)">
+    <span class="mono">Nova članska izkaznica</span>
+    <h1>Postani<br><em style="color:var(--paper)">član.</em></h1>
+    <p style="color:var(--ink)">Brezplačen račun, neomejeno brskanje, rezervacija z enim klikom.</p>
+    <div class="spines" aria-hidden="true">
+      {% for h, c in [(260,'#141210'),(200,'transparent'),(320,'#F2C230'),(240,'#141210'),(180,'transparent'),(280,'#EFE9DD')] %}<i style="height:{{ h }}px;background:{{ c }};border-color:#141210"></i>{% endfor %}
+    </div>
+  </div>
+  <div class="auth-form">
+    <div class="box reveal {{ 'is-admin' if role == 'admin' }}" id="regbox">
+      <h2>Registracija</h2>
+      <p class="sub">Že imaš račun? <a href="{{ url_for('login') }}">Prijavi se</a>.</p>
+      <form method="post">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <div class="role-pick" role="radiogroup" aria-label="Vloga">
+          <div><input type="radio" id="r-s" name="role" value="student" {{ 'checked' if role != 'admin' }}><label for="r-s"><b>Študent</b>Rezerviram knjige</label></div>
+          <div><input type="radio" id="r-a" name="role" value="admin" {{ 'checked' if role == 'admin' }}><label for="r-a"><b>Administrator</b>Upravljam katalog</label></div>
+        </div>
+        <div class="field" id="admin-code"><label for="admin_code">Administratorska koda</label><input id="admin_code" type="password" name="admin_code" autocomplete="off"><div class="hint">Kodo dobiš pri vodji knjižnice.</div></div>
+        <div class="field"><label for="name">Ime in priimek</label><input id="name" type="text" name="name" value="{{ form.get('name','') }}" required autocomplete="name"></div>
+        <div class="field"><label for="email">E-pošta</label><input id="email" type="email" name="email" value="{{ form.get('email','') }}" required autocomplete="email"></div>
+        <div class="row">
+          <div class="field"><label for="password">Geslo</label><input id="password" type="password" name="password" required minlength="6" autocomplete="new-password"></div>
+          <div class="field"><label for="password2">Ponovi geslo</label><input id="password2" type="password" name="password2" required minlength="6" autocomplete="new-password"></div>
+        </div>
+        <button class="btn btn-ink btn-block" type="submit">Ustvari račun →</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('input[name=role]').forEach(r => r.addEventListener('change', () =>
+    document.getElementById('regbox').classList.toggle('is-admin', r.value === 'admin' && r.checked)));
+</script>
+{% endblock %}

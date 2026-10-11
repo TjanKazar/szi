@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover %}
+{% block title %}{{ 'Uredi knjigo' if book else 'Nova knjiga' }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="mono muted">Administracija · {{ 'Urejanje' if book else 'Nov vnos' }}</span>
+      <h1>{% if book %}Uredi <em>knjigo</em>{% else %}Nova <em>knjiga</em>{% endif %}</h1>
+    </div>
+    <a class="btn" href="{{ url_for('admin_dashboard') }}">← Nadzorna plošča</a>
+  </div>
+</section>
+<div class="wrap">
+  <div class="form-shell">
+    <form class="form-card reveal" method="post" id="bookform">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <div class="field"><label for="title">Naslov *</label><input id="title" type="text" name="title" value="{{ form.get('title','') }}" required></div>
+      <div class="row">
+        <div class="field"><label for="author">Avtor *</label><input id="author" type="text" name="author" value="{{ form.get('author','') }}" required></div>
+        <div class="field"><label for="category">Kategorija *</label>
+          <input id="category" type="text" name="category" list="cats" value="{{ form.get('category','') }}" required>
+          <datalist id="cats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="year">Leto izida</label><input id="year" type="number" name="year" value="{{ form.get('year') or '' }}" min="0" max="2100"></div>
+        <div class="field"><label for="total_copies">Število izvodov *</label><input id="total_copies" type="number" name="total_copies" value="{{ form.get('total_copies', 1) }}" min="{{ active or 0 }}" required>
+          {% if book %}<div class="hint">Aktivnih rezervacij: {{ active }} · na voljo bo: <span id="avail-calc">{{ book.available_copies }}</span></div>{% endif %}
+        </div>
+      </div>
+      <div class="field"><label for="cover_url">URL naslovnice</label><input id="cover_url" type="url" name="cover_url" value="{{ form.get('cover_url','') }}" placeholder="https://…">
+        <div class="hint">Neobvezno. Brez slike se naslovnica ustvari samodejno.</div></div>
+      <div class="field"><label for="description">Opis</label><textarea id="description" name="description">{{ form.get('description','') }}</textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">{{ 'Shrani spremembe' if book else 'Dodaj v katalog' }} →</button>
+        {% if book %}<a class="btn btn-ghost" href="{{ url_for('book_detail', book_id=book.id) }}">Prekliči</a>{% endif %}
+      </div>
+    </form>
+    <aside class="preview">
+      <span class="mono muted">Predogled naslovnice</span>
+      <div id="preview-cover">{{ cover({'title': form.get('title') or 'Naslov knjige', 'author': form.get('author') or 'Avtor', 'category': form.get('category') or 'Kategorija', 'year': form.get('year'), 'cover_url': form.get('cover_url','')}) }}</div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const form = document.getElementById('bookform'), f = form.elements, pc = document.getElementById('preview-cover');
+  const set = (sel, v) => { const el = pc.querySelector(sel); if (el) el.textContent = v; };
+  form.addEventListener('input', () => {
+    set('.c-title', f.title.value || 'Naslov knjige');
+    set('.c-author', f.author.value || 'Avtor');
+    const top = pc.querySelectorAll('.c-top span');
+    top[0].textContent = f.category.value || 'Kategorija'; top[1].textContent = f.year.value || '';
+    const ac = document.getElementById('avail-calc');
+    if (ac) ac.textContent = Math.max(0, (parseInt(f.total_copies.value) || 0) - {{ active or 0 }});
+  });
+</script>
+{% endblock %}
